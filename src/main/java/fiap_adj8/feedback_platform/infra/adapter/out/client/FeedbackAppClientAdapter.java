@@ -23,11 +23,11 @@ public class FeedbackAppClientAdapter implements FeedbackAppClientPort {
 
     @Override
     public List<LessonSummary> getMostRatedLessons(LocalDate startDate, LocalDate endDate) {
-        return feedbackAppClient.getMostRatedLessons(startDate, endDate);
+        return feedbackAppClient.getMostRatedLessons(startDate.toString(), endDate.toString());
     }
 
     @Override
     public List<LessonSummary> getHighestRatedLessons(LocalDate startDate, LocalDate endDate) {
-        return feedbackAppClient.getHighestRatedLessons(startDate, endDate);
+        return feedbackAppClient.getHighestRatedLessons(startDate.toString(), endDate.toString());
     }
 }

@@ -58,8 +58,8 @@ public class WeeklyReportFunction implements BackgroundFunction<WeeklyReportFunc
     public void accept(PubSubMessage message, Context context) {
         // TODO: change rating value from enum to int - 1 to 5
 
-        LocalDate startDate = LocalDate.now();
-        LocalDate endDate = startDate.plusDays(7);
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = endDate.minusDays(60);
 
         List<String> adminEmails = feedbackAppClientPort.getAdminEmails();
         if (adminEmails.isEmpty()) {
