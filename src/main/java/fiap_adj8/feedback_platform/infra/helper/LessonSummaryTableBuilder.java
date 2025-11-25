@@ -1,12 +1,10 @@
 package fiap_adj8.feedback_platform.infra.helper;
 
 import fiap_adj8.feedback_platform.infra.adapter.out.client.dto.LessonSummary;
-import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-@ApplicationScoped
 public class LessonSummaryTableBuilder {
 
     public String buildTableRows(List<LessonSummary> lessons) {

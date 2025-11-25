@@ -5,7 +5,7 @@ import fiap_adj8.feedback_platform.infra.adapter.out.client.dto.LessonSummary;
 import java.time.LocalDate;
 import java.util.List;
 
-public interface FeedbackAppClientPort {
+public interface FeedbackServiceClientPort {
     List<String> getAdminEmails();
 
     List<LessonSummary> getMostRatedLessons(LocalDate startDate, LocalDate endDate);
