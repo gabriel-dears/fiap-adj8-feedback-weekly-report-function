@@ -1,0 +1,13 @@
+digraph weekly_report {
+    rankdir=LR;
+    node [shape=box, style=filled, color=lightblue];
+
+    Scheduler [label="Cloud Scheduler\n(Semanal)"];
+    PubSub [label="Pub/Sub\nTopic: weekly-feedback-reports"];
+    Function [label="WeeklyReportFunction\n(Cloud Function)"];
+    Admin [label="Admin Emails"];
+
+    Scheduler -> PubSub [label="trigger semanal"];
+    PubSub -> Function [label="mensagem de relatório"];
+    Function -> Admin [label="envia relatório semanal"];
+}
