@@ -16,12 +16,22 @@ RUNTIME="java17"
 MEMORY="512MB"
 TIMEOUT="60s"
 
+SA_KEY_PATH="$HOME/gcp-keys/sa-deploy-weekly-report-key.json"
+PROJECT_ID="fiap-adj8-feedback-platform"
+echo "🔐 Autenticando com Service Account de Infra..."
+gcloud auth activate-service-account --key-file="$SA_KEY_PATH"
+gcloud config set project "$PROJECT_ID"
+
 ########################################
 # FUNÇÕES AUXILIARES
 ########################################
 log() {
   echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
+
+gcloud auth activate-service-account \
+  sa-deploy-weekly-report@fiap-adj8-feedback-platform.iam.gserviceaccount.com \
+  --key-file="$HOME/gcp-keys/sa-deploy-weekly-report-key.json"
 
 ########################################
 # 1. Criar tópico Pub/Sub se não existir
@@ -34,6 +44,34 @@ if ! gcloud pubsub topics describe "$TOPIC_NAME" >/dev/null 2>&1; then
 else
   log "✅ Tópico '$TOPIC_NAME' já existe."
 fi
+
+########################################
+# CARREGAR VARIÁVEIS DO .env
+########################################
+
+ENV_FILE="$(dirname "$0")/.env"
+
+if [ ! -f "$ENV_FILE" ]; then
+  echo "❌ Arquivo .env não encontrado em $ENV_FILE"
+  exit 1
+fi
+
+set -a
+source "$ENV_FILE"
+set +a
+
+log "🔄 Gerando arquivo env.yaml para Cloud Function..."
+
+cat > env.yaml <<EOF
+FEEDBACK_SERVICE_BASE_URL: "$FEEDBACK_SERVICE_BASE_URL"
+FEEDBACK_SERVICE_AUTH: "$FEEDBACK_SERVICE_AUTH"
+
+EMAIL_SMTP_FROM: "$EMAIL_SMTP_FROM"
+EMAIL_SMTP_PASSWORD: "$EMAIL_SMTP_PASSWORD"
+EMAIL_SMTP_HOST: "$EMAIL_SMTP_HOST"
+EMAIL_SMTP_PORT: "$EMAIL_SMTP_PORT"
+EOF
+
 
 ########################################
 # 2. Deploy / Update da Cloud Function
@@ -52,6 +90,7 @@ gcloud functions deploy "$FUNCTION_NAME" \
   --service-account "$SERVICE_ACCOUNT" \
   --memory "$MEMORY" \
   --timeout "$TIMEOUT" \
+  --env-vars-file env.yaml \
   --quiet
 
 log "✅ Deploy da Cloud Function concluído!"
@@ -68,6 +107,7 @@ if ! gcloud scheduler jobs describe "$SCHEDULER_JOB_NAME" --location="$REGION" >
     --topic="$TOPIC_NAME" \
     --message-body='{"type":"WEEKLY_REPORT_TRIGGER"}' \
     --location="$REGION" \
+    --env-vars-file env.yaml \
     --quiet
   log "✅ Cloud Scheduler Job criado com sucesso!"
 else
@@ -81,6 +121,8 @@ log "📨 Enviando mensagem de validação para testar a função..."
 gcloud pubsub topics publish "$TOPIC_NAME" \
   --message="{\"type\":\"DEPLOY_VALIDATION\",\"source\":\"manual-deploy\",\"timestamp\":\"$(date -Iseconds)\"}" \
   --quiet
+
+rm -f env.yaml
 
 log "✅ Mensagem de validação enviada!"
 log "🔍 Verifique os logs com:"

@@ -15,10 +15,24 @@ import java.util.List;
 
 public class FeedbackServiceClientAdapter implements FeedbackServiceClientPort {
 
-    private static final String AUTH_HEADER = "Basic YWRtaW5AZW1haWwuY29tOmFkbWlu";
-
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final Gson gson = new Gson();
+
+    private final String baseUrl;
+    private final String authHeader;
+
+    public FeedbackServiceClientAdapter() {
+        this.baseUrl = System.getenv("FEEDBACK_SERVICE_BASE_URL");
+        this.authHeader = System.getenv("FEEDBACK_SERVICE_AUTH");
+
+        if (baseUrl == null || baseUrl.isBlank()) {
+            throw new RuntimeException("FEEDBACK_SERVICE_BASE_URL não definida");
+        }
+
+        if (authHeader == null || authHeader.isBlank()) {
+            throw new RuntimeException("FEEDBACK_SERVICE_AUTH não definida");
+        }
+    }
 
     @Override
     public List<String> getAdminEmails() {
@@ -49,11 +63,10 @@ public class FeedbackServiceClientAdapter implements FeedbackServiceClientPort {
 
     private <T> T getList(String path, Type type, String context) {
         try {
-            String baseUrl = "https://fiap-feedback-app-dot-fiap-adj8-feedback-platform.uc.r.appspot.com";
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(new URI(baseUrl + path))
                     .header("Accept", "application/json")
-                    .header("Authorization", AUTH_HEADER)
+                    .header("Authorization", "Basic " + authHeader)
                     .GET()
                     .build();
 
@@ -75,3 +88,4 @@ public class FeedbackServiceClientAdapter implements FeedbackServiceClientPort {
         }
     }
 }
+

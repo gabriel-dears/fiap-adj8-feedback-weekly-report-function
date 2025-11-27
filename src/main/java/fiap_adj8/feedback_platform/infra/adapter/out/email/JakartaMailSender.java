@@ -13,22 +13,43 @@ public class JakartaMailSender implements EmailSender {
 
     private static final Logger logger = Logger.getLogger(JakartaMailSender.class.getName());
 
+    private final String from;
+    private final String password;
+    private final String host;
+    private final String port;
+
+    public JakartaMailSender() {
+        this.from = System.getenv("EMAIL_SMTP_FROM");
+        this.password = System.getenv("EMAIL_SMTP_PASSWORD");
+        this.host = System.getenv("EMAIL_SMTP_HOST");
+        this.port = System.getenv("EMAIL_SMTP_PORT");
+
+        if (from == null || from.isBlank()) {
+            throw new RuntimeException("EMAIL_SMTP_FROM não definida");
+        }
+        if (password == null || password.isBlank()) {
+            throw new RuntimeException("EMAIL_SMTP_PASSWORD não definida");
+        }
+        if (host == null || host.isBlank()) {
+            throw new RuntimeException("EMAIL_SMTP_HOST não definida");
+        }
+        if (port == null || port.isBlank()) {
+            throw new RuntimeException("EMAIL_SMTP_PORT não definida");
+        }
+    }
+
     @Override
     public void send(EmailInput emailInput) {
-
         try {
-            String from = "gabrieldears@gmail.com"; // configure seu email real
-            String host = "smtp.gmail.com";
-
             Properties properties = new Properties();
             properties.put("mail.smtp.auth", "true");
             properties.put("mail.smtp.starttls.enable", "true");
             properties.put("mail.smtp.host", host);
-            properties.put("mail.smtp.port", "587");
+            properties.put("mail.smtp.port", port);
 
             Session session = Session.getInstance(properties, new Authenticator() {
                 protected PasswordAuthentication getPasswordAuthentication() {
-                    return new PasswordAuthentication(from, "xzqp btbu torv hehk");
+                    return new PasswordAuthentication(from, password);
                 }
             });
 
@@ -39,8 +60,12 @@ public class JakartaMailSender implements EmailSender {
             message.setContent(emailInput.htmlContent(), "text/html; charset=UTF-8");
 
             Transport.send(message);
+
+            logger.info("✅ Email enviado para: " + emailInput.to());
+
         } catch (Exception e) {
-            logger.warning("Sending email failed: " + e.getMessage());
+            logger.severe("❌ Falha ao enviar email: " + e.getMessage());
         }
     }
 }
+
