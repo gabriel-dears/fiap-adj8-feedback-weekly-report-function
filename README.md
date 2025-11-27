@@ -81,12 +81,66 @@ Essas permissões permitem que a função execute corretamente, leia mensagens d
 
 ---
 
-## Deploy
-
-Para realizar o deploy da função semanal:
-
-1. **Certifique-se que a Service Account de deploy está autenticada**:
+## Deploy / Instalação
+1. Tornar o script de deploy executável:
 ```bash
-gcloud auth activate-service-account sa-deploy-weekly-report@fiap-adj8-feedback-platform.iam.gserviceaccount.com --key-file=/path/to/key.json
-gcloud config set project fiap-adj8-feedback-platform
+chmod +x deploy.sh
 ```
+
+2. 📋 Configuração do .env
+
+   O arquivo .env é necessário para fornecer variáveis sensíveis e URLs externas que a função Cloud Function precisa para operar.
+   Crie o arquivo .env na raiz do projeto com o seguinte conteúdo (no mesmo nível que o arquivo deploy.sh):
+```text
+    # Feedback Service
+    FEEDBACK_SERVICE_BASE_URL=https://fiap-feedback-app-dot-fiap-adj8-feedback-platform.uc.r.appspot.com
+    FEEDBACK_SERVICE_AUTH=YWRtaW5AZW1haWwuY29tOmFkbWlu
+    
+    # SMTP Configuration
+    EMAIL_SMTP_FROM=[SEU_EMAIL]
+    EMAIL_SMTP_PASSWORD=[SUA_SENHA]
+    EMAIL_SMTP_HOST=smtp.gmail.com
+    EMAIL_SMTP_PORT=587
+
+```    
+
+    ⚠️ Importante: Substitua [SEU_EMAIL] e [SUA_SENHA] pelas suas credenciais reais de SMTP.
+    Estas informações são utilizadas para envio de notificações por email pela função weekly-report.
+
+3. Executar o deploy:
+
+```bash
+./deploy.sh
+```
+
+## ✅ O que o script faz
+
+1. **Autenticação no GCP**
+    - Autentica usando uma Service Account específica para deploy da função.
+
+2. **Criação / Verificação do tópico Pub/Sub**
+    - Verifica se o tópico `weekly-feedback-reports` existe.
+    - Caso não exista, ele é criado automaticamente.
+
+3. **Configuração de variáveis de ambiente**
+    - Lê o arquivo `.env` local.
+    - Gera um arquivo `env.yaml` usado pela Cloud Function durante o deploy.
+
+4. **Deploy da Cloud Function**
+    - Cria ou atualiza a função `weekly-report`.
+    - Configura:
+        - Runtime: Java 17
+        - Trigger: Pub/Sub
+        - Service Account dedicada
+        - Memória: 512MB
+        - Timeout: 60 segundos
+        - Variáveis de ambiente seguras via `.env`
+
+5. **Criação do Cloud Scheduler**
+    - Cria (se não existir) um job agendado semanal:
+        - Frequência: Domingo às 00:00
+        - Timezone: America/Sao_Paulo
+        - Envia mensagem automática ao Pub/Sub para disparar a função.
+
+6. **Teste automático pós-deploy**
+    - Envia uma mensagem de validação para o tópico Pub/Sub para garantir que a função está operacional.
